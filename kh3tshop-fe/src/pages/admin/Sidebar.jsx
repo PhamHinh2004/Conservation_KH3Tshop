@@ -1,94 +1,122 @@
 import React from 'react';
-import { BarChart3, Umbrella, Users, Package, Settings, LogOut, Menu, X, TrendingUp, MessageSquare } from 'lucide-react';
+import { MessageSquare, Users, User, LogOut, Menu, X, Settings } from 'lucide-react';
 import { useNavigate } from 'react-router';
 
-export default function Sidebar({ sidebarOpen, setSidebarOpen, activeTab, setActiveTab }) {
+export default function Sidebar({ sidebarOpen, setSidebarOpen, activeTab, setActiveTab, user }) {
     const navigate = useNavigate();
 
-    return (
-        <div className={`${sidebarOpen ? 'w-64' : 'w-20'} bg-gray-900 text-white transition-all duration-300 flex flex-col`}>
+    const getAvatar = () => {
+        if (user?.avatar) return user.avatar;
+        return `https://ui-avatars.com/api/?name=${user?.name}&background=random`;
+    };
 
-            <div className="p-4 flex items-center justify-between">
-                {sidebarOpen && <h2 className="text-xl font-bold">Admin Panel</h2>}
-                <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2 hover:bg-gray-800 rounded">
+    return (
+        <div className={`${sidebarOpen ? 'w-64' : 'w-36'} bg-gray-900 text-white transition-all duration-300 flex flex-col h-screen`}>
+
+            {/* HEADER */}
+            <div className="p-4 relative">
+
+                <div
+                    className={`flex items-center ${
+                        sidebarOpen ? 'gap-3' : 'justify-center'
+                    } cursor-pointer`}
+                    onClick={() => setActiveTab('user')}
+                >
+                    <img
+                        src={getAvatar()}
+                        className={`${sidebarOpen ? 'w-10 h-10' : 'w-11 h-11'} rounded-full object-cover`}
+                    />
+
+                    {sidebarOpen && (
+                        <div>
+                            <p className="text-sm font-semibold">Phạm Ngọc Thành</p>
+                            <p className="text-xs text-green-400">Online</p>
+                        </div>
+                    )}
+                </div>
+
+                <button
+                    onClick={() => setSidebarOpen(!sidebarOpen)}
+                    className={`p-2 hover:bg-gray-800 rounded absolute top-4 ${
+                        sidebarOpen ? 'right-4' : 'right-2'
+                    }`}
+                >
                     {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
                 </button>
+
             </div>
 
-            <nav className="flex-1 p-4 space-y-2">
-
-                <button
-                    onClick={() => setActiveTab('dashboard')}
-                    className={`w-full flex items-center gap-3 p-3 rounded-lg transition ${
-                        activeTab === 'dashboard' ? 'bg-blue-600' : 'hover:bg-gray-800'
-                    }`}
-                >
-                    <BarChart3 size={20} />
-                    {sidebarOpen && <span>Dashboard</span>}
-                </button>
-
-                <button
-                    onClick={() => setActiveTab('customers')}
-                    className={`w-full flex items-center gap-3 p-3 rounded-lg transition ${
-                        activeTab === 'customers' ? 'bg-blue-600' : 'hover:bg-gray-800'
-                    }`}
-                >
-                    <Users size={20} />
-                    {sidebarOpen && <span>Customer</span>}
-                </button>
-
-                <button
-                    onClick={() => setActiveTab('employees')}
-                    className={`w-full flex items-center gap-3 p-3 rounded-lg transition ${
-                        activeTab === 'employees' ? 'bg-blue-600' : 'hover:bg-gray-800'
-                    }`}
-                >
-                    <Umbrella size={20} />
-                    {sidebarOpen && <span>Employee</span>}
-                </button>
-
-                <button
-                    onClick={() => setActiveTab('products')}
-                    className={`w-full flex items-center gap-3 p-3 rounded-lg transition ${
-                        activeTab === 'products' ? 'bg-blue-600' : 'hover:bg-gray-800'
-                    }`}
-                >
-                    <Package size={20} />
-                    {sidebarOpen && <span>Product</span>}
-                </button>
-
-                <button
-                    onClick={() => setActiveTab('productDashboard')}
-                    className={`w-full flex items-center gap-3 p-3 rounded-lg transition ${
-                        activeTab === 'productDashboard' ? 'bg-blue-600' : 'hover:bg-gray-800'
-                    }`}
-                >
-                    <TrendingUp size={20} />
-                    {sidebarOpen && <span>Product Dashboard</span>}
-                </button>
+            {/* MENU */}
+            <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
 
                 {/* CHAT */}
                 <button
                     onClick={() => setActiveTab('chat')}
-                    className={`w-full flex items-center gap-3 p-3 rounded-lg transition ${
+                    className={`w-full flex items-center ${
+                        sidebarOpen ? 'gap-3 justify-start' : 'justify-center'
+                    } ${sidebarOpen ? 'p-3' : 'p-4'} rounded-lg transition ${
                         activeTab === 'chat' ? 'bg-blue-600' : 'hover:bg-gray-800'
                     }`}
                 >
-                    <MessageSquare size={20} />
+                    <MessageSquare size={sidebarOpen ? 23 : 24} />
                     {sidebarOpen && <span>Chat</span>}
                 </button>
 
+                {/* COMMUNITY */}
+                <button
+                    onClick={() => setActiveTab('community')}
+                    className={`w-full flex items-center ${
+                        sidebarOpen ? 'gap-3 justify-start' : 'justify-center'
+                    } ${sidebarOpen ? 'p-3' : 'p-4'} rounded-lg transition ${
+                        activeTab === 'community' ? 'bg-blue-600' : 'hover:bg-gray-800'
+                    }`}
+                >
+                    <Users size={sidebarOpen ? 20 : 28} />
+                    {sidebarOpen && <span>Community</span>}
+                </button>
+
+                {/*/!* USERS *!/*/}
+                {/*<button*/}
+                {/*    onClick={() => setActiveTab('users')}*/}
+                {/*    className={`w-full flex items-center ${*/}
+                {/*        sidebarOpen ? 'gap-3 justify-start' : 'justify-center'*/}
+                {/*    } ${sidebarOpen ? 'p-3' : 'p-4'} rounded-lg transition ${*/}
+                {/*        activeTab === 'users' ? 'bg-blue-600' : 'hover:bg-gray-800'*/}
+                {/*    }`}*/}
+                {/*>*/}
+                {/*    <User size={sidebarOpen ? 20 : 28} />*/}
+                {/*    {sidebarOpen && <span>Users</span>}*/}
+                {/*</button>*/}
+
             </nav>
 
+            {/* SETTING */}
             <div className="p-4 border-t border-gray-800">
                 <button
-                    className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-red-600 transition mt-2"
+                    onClick={() => setActiveTab('setting')}
+                    className={`w-full flex items-center ${
+                        sidebarOpen ? 'gap-3 justify-start' : 'justify-center'
+                    } ${sidebarOpen ? 'p-3' : 'p-4'} rounded-lg transition ${
+                        activeTab === 'setting' ? 'bg-blue-600' : 'hover:bg-gray-800'
+                    }`}
+                >
+                    <Settings size={sidebarOpen ? 20 : 28} />
+                    {sidebarOpen && <span>Settings</span>}
+                </button>
+            </div>
+
+            {/* LOGOUT */}
+            <div className="p-4 border-t border-gray-800">
+                <button
+                    className={`w-full flex items-center ${
+                        sidebarOpen ? 'gap-3 justify-start' : 'justify-center'
+                    } ${sidebarOpen ? 'p-3' : 'p-4'} rounded-lg hover:bg-red-600 transition`}
                     onClick={() => {
-                        localStorage.removeItem("accessToken")
-                        navigate("/login")
+                        localStorage.removeItem("accessToken");
+                        navigate("/login");
                     }}
                 >
-                    <LogOut size={20} />
+                    <LogOut size={sidebarOpen ? 20 : 28} />
                     {sidebarOpen && <span>Log out</span>}
                 </button>
             </div>

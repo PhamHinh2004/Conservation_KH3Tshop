@@ -33,6 +33,8 @@ export default function AdminDashboard() {
         return <ProductDashboard onNavigate={handleNavigateToProducts}/>;
         case 'chat':
             return <Chat />;
+        case 'community':
+            return <community/>;
       default:
         return <Dashboard />;
     }
