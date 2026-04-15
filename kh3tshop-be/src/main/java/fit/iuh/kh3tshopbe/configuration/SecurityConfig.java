@@ -16,41 +16,62 @@ import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter; // 🔥 THÊM
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import org.springframework.web.filter.CorsFilter; // Đảm bảo import này tồn tại
+import org.springframework.web.filter.CorsFilter;
 
 import javax.crypto.spec.SecretKeySpec;
 import java.util.List;
-
 
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
 public class SecurityConfig {
 
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+
+    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
+        this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+    }
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
-                .cors(cors -> cors.configurationSource(corsConfigurationSource())) // ✅ dùng đúng nguồn CORS config
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+
                 .authorizeHttpRequests(request -> request
                         .requestMatchers(HttpMethod.POST, "/api/v1/payment/sepay-callback").permitAll()
                         .requestMatchers(HttpMethod.POST, "/accounts").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/auth/login", "/auth/introspect", "/auth/forgot-password", "/auth/reset-password").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/accounts/username/*", "/products", "/products/**", "/categories", "/categories/**", "cart-details/**", "cart-details/cart/**", "/carts/", "/carts/**","/addresses/", "/addresses/**", "/sizes", "/orders", "/orders/**", "/invoices", "/invoices/**", "/customers", "/customers/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/chat/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/chat/**").permitAll()
+
+                        .requestMatchers(HttpMethod.POST,
+                                "/auth/login",
+                                "/auth/introspect",
+                                "/auth/forgot-password",
+                                "/auth/reset-password",
+                                "/auth/send-otp",
+                                "/auth/verify-otp"
+                        ).permitAll()
+
+                        .requestMatchers(HttpMethod.GET,
+                                "/accounts/username/*",
+                                "/products/**",
+                                "/categories/**",
+                                "/carts/**",
+                                "/addresses/**",
+                                "/orders/**",
+                                "/invoices/**",
+                                "/customers/**"
+                        ).permitAll()
+
                         .requestMatchers("/admin-chat/**").hasRole("ADMIN")
+
                         .anyRequest().authenticated()
                 )
-                .oauth2ResourceServer(auth -> auth
-                        .jwt(jwt -> jwt
-                                .decoder(jwtDecoder())
-                                .jwtAuthenticationConverter(jwtAuthenticationConverter())
-                        )
-                        .authenticationEntryPoint(new AuthenticationEntryPoint())
-                );
+
+                // 🔥 CHỈ DÙNG FILTER NÀY
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
@@ -61,11 +82,10 @@ public class SecurityConfig {
         return new CorsFilter(source);
     }
 
-    // Giữ nguyên CorsConfigurationSource của bạn
     @Bean
     public UrlBasedCorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("http://localhost:5173")); 
+        config.setAllowedOrigins(List.of("http://localhost:5173"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
@@ -73,28 +93,6 @@ public class SecurityConfig {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
         return source;
-    }
-
-    @Bean
-    JwtAuthenticationConverter jwtAuthenticationConverter() {
-        JwtGrantedAuthoritiesConverter converter = new JwtGrantedAuthoritiesConverter();
-        converter.setAuthorityPrefix("ROLE_");
-
-        JwtAuthenticationConverter authenticationConverter = new JwtAuthenticationConverter();
-        authenticationConverter.setJwtGrantedAuthoritiesConverter(converter);
-        return authenticationConverter;
-    }
-
-    private static final String SIGNER_KEY =
-            "c8e09fddda9e192d16c485affabc61c9f4bca77a60c19d448f3a6e8475b9f0a4e0d1f69bca8d21f1123b8f0f8a0b8d12";
-
-    @Bean
-    JwtDecoder jwtDecoder() {
-        SecretKeySpec keySpec = new SecretKeySpec(SIGNER_KEY.getBytes(), "HS512");
-        return NimbusJwtDecoder
-                .withSecretKey(keySpec)
-                .macAlgorithm(MacAlgorithm.HS512)
-                .build();
     }
 
     @Bean

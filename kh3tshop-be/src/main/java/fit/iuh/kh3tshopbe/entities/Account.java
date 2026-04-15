@@ -18,33 +18,51 @@ import java.util.List;
 @ToString
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class Account {
+
     @Id
     @Column(name = "login_id")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     int id;
+
     @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "customer_id")
     @ToString.Exclude
     Customer customer;
+
     @Column(name = "username")
     String username;
+
     @Column(name = "password")
     String password;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "role")
     Role role;
+
     @Column(name = "create_at")
     Date createAt;
+
     @Column(name = "update_at")
     Date updateAt;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status_login")
     StatusLogin statusLogin;
 
+    // 🔥 OTP
+    @Column(name = "otp")
+    String otp;
+
+    @Column(name = "otp_expiry")
+    Date otpExpiry;
+
+    // 🔥 NEW: SESSION TOKEN (QUAN TRỌNG)
+    @Column(name = "session_token")
+    String sessionToken;
+
     @OneToMany(mappedBy = "account")
     @ToString.Exclude
     private List<Address> addresses;
-
 
     @OneToOne(mappedBy = "account", cascade = CascadeType.ALL)
     private Cart cart;

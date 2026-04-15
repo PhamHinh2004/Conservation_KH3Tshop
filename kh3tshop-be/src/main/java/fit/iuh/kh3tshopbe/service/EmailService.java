@@ -38,6 +38,10 @@ public class EmailService {
 
     }
 
+    public void sendOtpEmail(String email, String otp) {
+        System.out.println("OTP gửi tới " + email + ": " + otp);
+    }
+
 
 
     public void sendHtmlEmail(String to, String subject, String htmlContent) {
