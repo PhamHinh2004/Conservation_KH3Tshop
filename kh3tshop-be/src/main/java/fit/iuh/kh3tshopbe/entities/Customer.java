@@ -27,6 +27,9 @@ public class Customer {
     private String phoneNumber;
     @Column(name = "email")
     private String email;
+    @Lob
+    @Column(name = "avatar", columnDefinition = "LONGTEXT")
+    private String avatar;
     @Enumerated(EnumType.STRING)
     @Column(name = "gender")
     private Gender gender;

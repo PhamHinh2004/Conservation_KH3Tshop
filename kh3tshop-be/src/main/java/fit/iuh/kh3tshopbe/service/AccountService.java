@@ -47,6 +47,7 @@ public class AccountService {
     CustomerService customerService;
     CartService cartService;
     CustomerMapper customerMapper;
+    EmailService emailService;
 
 
     public AccountResponse addAccount(AccountRequest accountRequest) {
@@ -207,6 +208,81 @@ public class AccountService {
 
     public  Account saveAccount(Account account){
         return this.accountRepository.save(account);
+    }
+
+    // OTP storage: Map<username, OtpData>
+    private static final java.util.Map<String, OtpData> otpStorage = new java.util.concurrent.ConcurrentHashMap<>();
+    private static final int OTP_EXPIRY_SECONDS = 120;
+
+    public void sendDeleteAccountOtp(String phoneNumber) {
+        // Get current user
+        var contextHolder = SecurityContextHolder.getContext();
+        String username = contextHolder.getAuthentication().getName();
+        Account account = this.accountRepository.findByUsername(username)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+
+        // Validate phone number matches
+        if(!account.getCustomer().getPhoneNumber().equals(phoneNumber)) {
+            throw new AppException(ErrorCode.INVALID_PHONE);
+        }
+
+        // Generate 6-digit OTP
+        String otp = String.format("%06d", new java.util.Random().nextInt(1000000));
+
+        // Store OTP with timestamp
+        otpStorage.put(username, new OtpData(otp, System.currentTimeMillis()));
+
+        // Send OTP via email
+        String subject = "XÁC NHẬN XÓA TÀI KHOẢN - KH3T SHOP";
+        String content = "Mã OTP của bạn là: " + otp + "\n\nMã này sẽ hết hiệu lực sau 2 phút.\n\n" +
+                "Nếu bạn không yêu cầu xóa tài khoản, vui lòng bỏ qua email này.";
+        emailService.sendSimpleEmail(account.getCustomer().getEmail(), subject, content);
+    }
+
+    public void verifyAndLockAccount(String otp) {
+        // Get current user
+        var contextHolder = SecurityContextHolder.getContext();
+        String username = contextHolder.getAuthentication().getName();
+        Account account = this.accountRepository.findByUsername(username)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+
+        // Check if OTP exists and is not expired
+        OtpData otpData = otpStorage.get(username);
+        if(otpData == null) {
+            throw new AppException(ErrorCode.INVALID_OTP);
+        }
+
+        long currentTime = System.currentTimeMillis();
+        long otpAge = (currentTime - otpData.timestamp) / 1000; // Convert to seconds
+
+        if(otpAge > OTP_EXPIRY_SECONDS) {
+            otpStorage.remove(username);
+            throw new AppException(ErrorCode.INVALID_OTP);
+        }
+
+        // Verify OTP matches
+        if(!otpData.code.equals(otp)) {
+            throw new AppException(ErrorCode.INVALID_OTP);
+        }
+
+        // Lock account
+        account.setStatusLogin(StatusLogin.LOCKED);
+        account.setUpdateAt(new Date());
+        accountRepository.save(account);
+
+        // Clear OTP
+        otpStorage.remove(username);
+    }
+
+    // Inner class for OTP storage
+    private static class OtpData {
+        String code;
+        long timestamp;
+
+        OtpData(String code, long timestamp) {
+            this.code = code;
+            this.timestamp = timestamp;
+        }
     }
 
 }

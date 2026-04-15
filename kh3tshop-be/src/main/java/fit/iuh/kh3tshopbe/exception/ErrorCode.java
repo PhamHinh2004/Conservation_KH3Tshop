@@ -25,7 +25,9 @@ public enum ErrorCode {
     SIZE_DETAIL_NOT_FOUND(3002, "Size detail not found", HttpStatus.NOT_FOUND),
     INVOICE_NOT_FOUND(3003, "Invoice not found", HttpStatus.NOT_FOUND),
     ACCOUNT_NOT_FOUND(3004, "Account not found", HttpStatus.NOT_FOUND),
-    ORDER_NOT_FOUND(3005, "Order not found", HttpStatus.NOT_FOUND);
+    ORDER_NOT_FOUND(3005, "Order not found", HttpStatus.NOT_FOUND),
+    INVALID_OTP(4001, "Invalid or expired OTP. Please request a new OTP.", HttpStatus.BAD_REQUEST),
+    INVALID_PHONE(4002, "Phone number does not match your account", HttpStatus.BAD_REQUEST);
 
     private int code;
     private String message;

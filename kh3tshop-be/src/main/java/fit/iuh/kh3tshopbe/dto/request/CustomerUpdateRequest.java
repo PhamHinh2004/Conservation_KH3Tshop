@@ -3,6 +3,7 @@ import fit.iuh.kh3tshopbe.enums.Gender;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Past;
 import lombok.Data;
 import java.util.Date;
 
@@ -23,6 +24,12 @@ public class CustomerUpdateRequest {
     @Email(message = "Invalid email format")
     private String email;
 
+    private String avatar;
     private Gender gender;
+    
+    @Past(message = "Date of Birth must be in the past")
     private Date dateOfBirth;
+    
+    // 💡 Verification code khi thay đổi email
+    private String emailVerificationCode;
 }
