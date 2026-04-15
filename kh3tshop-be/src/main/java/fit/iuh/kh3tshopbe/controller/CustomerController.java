@@ -1,42 +1,36 @@
 package fit.iuh.kh3tshopbe.controller;
 
-import fit.iuh.kh3tshopbe.dto.response.ApiResponse;
-import fit.iuh.kh3tshopbe.dto.response.CustomerResponse;
 import fit.iuh.kh3tshopbe.dto.request.CustomerUpdateRequest;
+import fit.iuh.kh3tshopbe.dto.request.EmailVerificationCodeRequest;
+import fit.iuh.kh3tshopbe.dto.request.EmailVerificationRequest;
 import fit.iuh.kh3tshopbe.dto.response.AccountResponse;
 import fit.iuh.kh3tshopbe.dto.response.ApiResponse;
 import fit.iuh.kh3tshopbe.dto.response.CustomerResponse;
+import fit.iuh.kh3tshopbe.dto.response.EmailCheckResponse;
 import fit.iuh.kh3tshopbe.entities.Customer;
 import fit.iuh.kh3tshopbe.entities.Product;
-
-import fit.iuh.kh3tshopbe.service.CustomerService;
-import fit.iuh.kh3tshopbe.service.EmailService;
-import fit.iuh.kh3tshopbe.service.ProductService;
-
-
-import fit.iuh.kh3tshopbe.repository.ProductRepository;
-import fit.iuh.kh3tshopbe.service.*;
 import fit.iuh.kh3tshopbe.exception.AppException;
 import fit.iuh.kh3tshopbe.exception.ErrorCode;
+import fit.iuh.kh3tshopbe.repository.ProductRepository;
+import fit.iuh.kh3tshopbe.service.AccountService;
 import fit.iuh.kh3tshopbe.service.CustomerService;
+import fit.iuh.kh3tshopbe.service.EmailService;
+import fit.iuh.kh3tshopbe.service.OrderService;
+import fit.iuh.kh3tshopbe.service.ProductService;
 import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
-
-
-
-import java.util.List;
-
-
-import org.springframework.security.core.context.SecurityContextHolder; // ✅ Thêm import này
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
 import java.util.List;
 
 @RestController
@@ -142,6 +136,90 @@ public class CustomerController {
     @GetMapping("/{id}")
     public CustomerResponse getCustomerById(@PathVariable int id) {
         return customerService.getCustomerById(id);
+    }
+
+    // ============ EMAIL VERIFICATION ENDPOINTS ============
+    
+    /**
+     * Kiểm tra email có tồn tại không
+     * GET /customers/check-email?email={email}
+     */
+    @GetMapping("/check-email")
+    public ApiResponse<EmailCheckResponse> checkEmailExists(@RequestParam(value = "email", required = true) String email) {
+        boolean exists = customerService.existsByEmail(email);
+        EmailCheckResponse response = new EmailCheckResponse(
+            exists,
+            exists ? "Email already exists" : "Email is available"
+        );
+        return ApiResponse.<EmailCheckResponse>builder()
+        .code(200)
+        .result(response)
+        .message(response.getMessage())
+        .build();
+    }
+    
+    /**
+     * Gửi verification code qua email
+     * POST /customers/send-email-verification
+     */
+    @PreAuthorize("isAuthenticated()")
+    @PostMapping("/send-email-verification")
+    public ApiResponse<?> sendEmailVerification(@RequestBody EmailVerificationRequest request) {
+        // Kiểm tra authorization
+        String currentUsername = SecurityContextHolder.getContext().getAuthentication().getName();
+        AccountResponse accountResponse = accountService.getAccountByUsername(currentUsername);
+        if (accountResponse == null || accountResponse.getCustomer() == null) {
+            throw new AppException(ErrorCode.USER_NOT_FOUND);
+        }
+        int currentCustomerId = accountResponse.getCustomer().getId();
+        if (!request.getCustomerId().equals(currentCustomerId)) {
+            throw new AppException(ErrorCode.User_Not_Authorized);
+        }
+        
+        try {
+            customerService.sendEmailVerificationCode(request.getCustomerId(), request.getNewEmail());
+            return ApiResponse.builder()
+                    .code(200)
+                    .message("Verification code sent to " + request.getNewEmail())
+                    .result(true)
+                    .build();
+        } catch (AppException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new AppException(ErrorCode.UnknownError);
+        }
+    }
+    
+    /**
+     * Xác thực verification code
+     * POST /customers/verify-email-code
+     */
+    @PreAuthorize("isAuthenticated()")
+    @PostMapping("/verify-email-code")
+    public ApiResponse<?> verifyEmailCode(@RequestBody EmailVerificationCodeRequest request) {
+        // Kiểm tra authorization
+        String currentUsername = SecurityContextHolder.getContext().getAuthentication().getName();
+        AccountResponse accountResponse = accountService.getAccountByUsername(currentUsername);
+        if (accountResponse == null || accountResponse.getCustomer() == null) {
+            throw new AppException(ErrorCode.USER_NOT_FOUND);
+        }
+        int currentCustomerId = accountResponse.getCustomer().getId();
+        if (!request.getCustomerId().equals(currentCustomerId)) {
+            throw new AppException(ErrorCode.User_Not_Authorized);
+        }
+        
+        try {
+            boolean verified = customerService.verifyEmailCode(request);
+            return ApiResponse.builder()
+                    .code(200)
+                    .message(verified ? "Email verified successfully" : "Email verification failed")
+                    .result(verified)
+                    .build();
+        } catch (AppException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new AppException(ErrorCode.UnknownError);
+        }
     }
 
 }

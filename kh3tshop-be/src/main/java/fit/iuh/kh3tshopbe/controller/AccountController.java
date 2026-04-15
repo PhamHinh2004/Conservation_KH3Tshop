@@ -1,6 +1,8 @@
 package fit.iuh.kh3tshopbe.controller;
 import fit.iuh.kh3tshopbe.dto.request.AccountRequest;
 import fit.iuh.kh3tshopbe.dto.request.MeetingRequest;
+import fit.iuh.kh3tshopbe.dto.request.DeleteAccountRequest;
+import fit.iuh.kh3tshopbe.dto.request.VerifyOtpRequest;
 import fit.iuh.kh3tshopbe.dto.response.AccountResponse;
 import fit.iuh.kh3tshopbe.dto.response.ApiResponse;
 import fit.iuh.kh3tshopbe.entities.Account;
@@ -118,6 +120,36 @@ public class AccountController {
             return ApiResponse.builder()
                     .result("Failed to create meeting: " + e.getMessage())
                     .code(500)
+                    .build();
+        }
+    }
+
+    @PostMapping("/request-delete-otp")
+    public ApiResponse<?> requestDeleteOtp(@RequestBody @Valid DeleteAccountRequest request) {
+        try {
+            accountService.sendDeleteAccountOtp(request.getPhoneNumber());
+            return ApiResponse.builder()
+                    .result("OTP sent successfully to your registered email")
+                    .build();
+        } catch (Exception e) {
+            return ApiResponse.builder()
+                    .result(e.getMessage() != null ? e.getMessage() : "Failed to send OTP")
+                    .code(400)
+                    .build();
+        }
+    }
+
+    @PostMapping("/verify-delete-otp")
+    public ApiResponse<?> verifyDeleteOtp(@RequestBody @Valid VerifyOtpRequest request) {
+        try {
+            accountService.verifyAndLockAccount(request.getOtp());
+            return ApiResponse.builder()
+                    .result("Account locked successfully. You can reactivate it within 30 days.")
+                    .build();
+        } catch (Exception e) {
+            return ApiResponse.builder()
+                    .result(e.getMessage() != null ? e.getMessage() : "OTP verification failed")
+                    .code(400)
                     .build();
         }
     }

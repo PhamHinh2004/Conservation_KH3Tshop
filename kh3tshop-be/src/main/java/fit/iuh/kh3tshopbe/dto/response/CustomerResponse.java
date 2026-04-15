@@ -17,7 +17,9 @@ public class CustomerResponse {
     private String fullName;
     private String phoneNumber;
     private String email;
+    private String avatar;
     private Gender gender;
     private Date dateOfBirth;
+    private Date createAt;
 
 }
